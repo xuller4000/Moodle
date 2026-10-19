@@ -13,7 +13,7 @@ const notFound = () => new Response("Not found", { status: 404 });
 
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
-    const secret = env.CONNECTOR_SECRET ?? "";
+    const secret = (env.CONNECTOR_SECRET ?? "").trim();
     if (secret.length < 24) {
       return new Response("CONNECTOR_SECRET fehlt oder ist kürzer als 24 Zeichen.", { status: 500 });
     }

@@ -25,6 +25,8 @@ jobs:
 
       - name: Check secrets
         run: |
+          # Strip whitespace that easily sneaks in when pasting the secret into GitHub.
+          CONNECTOR_SECRET=$(printf '%s' "$CONNECTOR_SECRET" | tr -d '[:space:]')
           for v in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CONNECTOR_SECRET; do
             if [ -z "${!v}" ]; then echo "::error::GitHub secret $v fehlt"; exit 1; fi
           done
@@ -43,4 +45,4 @@ jobs:
           sed -i "s/__KV_ID__/$ID/" wrangler.jsonc
 
       - run: npx wrangler deploy
-      - run: printf '%s' "$CONNECTOR_SECRET" | npx wrangler secret put CONNECTOR_SECRET
+      - run: printf '%s' "$CONNECTOR_SECRET" | tr -d '[:space:]' | npx wrangler secret put CONNECTOR_SECRET
