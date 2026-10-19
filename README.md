@@ -23,7 +23,7 @@ Die Session wird trotzdem irgendwann ungültig, etwa wenn du dich im Browser bei
 ### 1. Cloudflare
 
 1. Account auf cloudflare.com anlegen.
-2. Im Dashboard einmal **Workers & Pages** öffnen und eine `workers.dev`-Subdomain wählen (z. B. `tristan`). Der Worker ist später unter `https://moodle-connector.<subdomain>.workers.dev` erreichbar.
+2. Im Dashboard einmal **Workers & Pages** öffnen und eine `workers.dev`-Subdomain wählen (hier `xuller4000`). Der Worker ist später unter `https://moodle-connector.xuller4000.workers.dev` erreichbar.
 3. **Account-ID** kopieren (steht rechts auf der Workers-Übersicht oder unter *Account home*).
 4. API-Token anlegen: *My Profile → API Tokens → Create Token →* Vorlage **Edit Cloudflare Workers**, als Account den eigenen wählen, Zone-Ressourcen auf *All zones* lassen. Token kopieren.
 
@@ -45,7 +45,7 @@ Danach unter *Actions → Deploy to Cloudflare → Run workflow* den ersten Depl
 
 1. Im Browser bei https://moodle.hm.edu anmelden.
 2. Entwicklertools öffnen (F12), unter *Speicher* (Firefox) bzw. *Application → Cookies* (Chrome) bei `https://moodle.hm.edu` den Wert von `MoodleSession` kopieren.
-3. `https://moodle-connector.<subdomain>.workers.dev/<CONNECTOR_SECRET>/setup` öffnen, Wert einfügen, *Speichern und prüfen*.
+3. `https://moodle-connector.xuller4000.workers.dev/<CONNECTOR_SECRET>/setup` öffnen, Wert einfügen, *Speichern und prüfen*.
 4. Den Moodle-Tab einfach schließen, **nicht abmelden**. Abmelden macht die Session sofort ungültig.
 
 ### 4. In Claude einbinden
@@ -53,7 +53,7 @@ Danach unter *Actions → Deploy to Cloudflare → Run workflow* den ersten Depl
 claude.ai → *Einstellungen → Connectors → Custom Connector hinzufügen*:
 
 - Name: `HM Moodle`
-- URL: `https://moodle-connector.<subdomain>.workers.dev/<CONNECTOR_SECRET>/mcp`
+- URL: `https://moodle-connector.xuller4000.workers.dev/<CONNECTOR_SECRET>/mcp`
 
 OAuth-Felder leer lassen. Danach steht der Connector auch in der Desktop- und Mobile-App zur Verfügung.
 
