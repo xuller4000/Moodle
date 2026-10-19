@@ -23,7 +23,13 @@ export default {
     if (prefix === "dl" && req.method === "GET") return handleDownload(env, route);
     // Everything else lives under /<secret>/... and otherwise looks like an empty site.
     if (!prefix || !safeEqual(prefix, secret) || rest.length) return notFound();
-    if (route === "mcp") return handleMcp(req, env);
+    if (route === "mcp") {
+      // A browser opening the MCP URL by mistake lands on the setup page; MCP clients never ask for HTML.
+      if (req.method === "GET" && (req.headers.get("Accept") ?? "").includes("text/html")) {
+        return Response.redirect(new URL(`/${prefix}/setup`, req.url).toString(), 302);
+      }
+      return handleMcp(req, env);
+    }
     if (route === "setup") return handleSetup(req, env);
     return notFound();
   },
