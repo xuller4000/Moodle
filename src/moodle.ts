@@ -38,6 +38,14 @@ export function normalizeCookie(input: string): string {
   return v.includes("=") ? v : `MoodleSession=${v}`;
 }
 
+/** Short hash of the MoodleSession value, so clients can compare cookies without exchanging them. */
+export async function sessionFingerprint(cookieHeader: string): Promise<string | null> {
+  const value = cookieHeader.match(/(?:^|;\s*)MoodleSession=([^;]+)/)?.[1];
+  if (!value) return null;
+  const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
+  return [...hash.subarray(0, 8)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 export interface FetchResult {
   res: Response;
   finalUrl: string;

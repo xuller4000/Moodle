@@ -1,4 +1,13 @@
-import { Env, loadSession, Moodle, normalizeCookie, saveSession, SessionData, SessionExpiredError } from "./moodle";
+import {
+  Env,
+  loadSession,
+  Moodle,
+  normalizeCookie,
+  saveSession,
+  SessionData,
+  SessionExpiredError,
+  sessionFingerprint,
+} from "./moodle";
 
 function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -82,4 +91,46 @@ export async function handleSetup(req: Request, env: Env): Promise<Response> {
     }
     return page(env, action === "check" ? session : current, msg, false);
   }
+}
+
+/**
+ * JSON endpoints for the browser extension: GET api/status reports the stored session,
+ * POST api/cookie validates a cookie against Moodle and stores it only if it is logged in.
+ */
+export async function handleApi(req: Request, env: Env, action: string): Promise<Response> {
+  const json = (data: unknown, status = 200) =>
+    Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
+
+  if (action === "status" && req.method === "GET") {
+    const s = await loadSession(env);
+    if (!s) return json({ configured: false, ok: false });
+    return json({
+      configured: true,
+      ok: s.lastCheckOk !== false,
+      userId: s.userId ?? null,
+      updatedAt: s.updatedAt,
+      lastCheckAt: s.lastCheckAt ?? null,
+      lastError: s.lastError ?? null,
+      fingerprint: await sessionFingerprint(s.cookie),
+    });
+  }
+
+  if (action === "cookie" && req.method === "POST") {
+    const body = (await req.json().catch(() => null)) as { cookie?: unknown } | null;
+    const raw = typeof body?.cookie === "string" ? body.cookie.trim() : "";
+    if (!raw) return json({ ok: false, error: "cookie fehlt" }, 400);
+    const session: SessionData = { cookie: normalizeCookie(raw), sesskey: "", updatedAt: new Date().toISOString() };
+    try {
+      await new Moodle(env, session).refreshSesskey();
+    } catch (e) {
+      if (e instanceof SessionExpiredError) return json({ ok: false, error: "not_logged_in" }, 401);
+      return json({ ok: false, error: (e as Error).message }, 502);
+    }
+    session.lastCheckOk = true;
+    session.lastCheckAt = new Date().toISOString();
+    await saveSession(env, session);
+    return json({ ok: true, userId: session.userId ?? null });
+  }
+
+  return json({ ok: false, error: "not found" }, 404);
 }

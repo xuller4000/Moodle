@@ -1,7 +1,7 @@
 import { handleDownload } from "./download";
 import { handleMcp } from "./mcp";
 import { Env, loadSession, Moodle, saveSession, SessionExpiredError } from "./moodle";
-import { handleSetup } from "./setup";
+import { handleApi, handleSetup } from "./setup";
 
 function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -22,7 +22,9 @@ export default {
     // Download links carry their own random token so they can be shared in chat without the secret.
     if (prefix === "dl" && req.method === "GET") return handleDownload(env, route);
     // Everything else lives under /<secret>/... and otherwise looks like an empty site.
-    if (!prefix || !safeEqual(prefix, secret) || rest.length) return notFound();
+    if (!prefix || !safeEqual(prefix, secret)) return notFound();
+    if (route === "api" && rest.length === 1) return handleApi(req, env, rest[0]);
+    if (rest.length) return notFound();
     if (route === "mcp") {
       // A browser opening the MCP URL by mistake lands on the setup page; MCP clients never ask for HTML.
       if (req.method === "GET" && (req.headers.get("Accept") ?? "").includes("text/html")) {
