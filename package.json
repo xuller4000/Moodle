@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@cantoo/pdf-lib": "^2.9.2",
     "fflate": "0.8.2",
     "node-html-parser": "7.0.1",
     "unpdf": "1.3.2"

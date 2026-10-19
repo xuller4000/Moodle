@@ -1,6 +1,7 @@
 import { unzipSync, strFromU8 } from "fflate";
 import { extractText, getDocumentProxy } from "unpdf";
 import { htmlToText } from "./html";
+import { PdfPasswordError } from "./pdf";
 
 export type Extracted =
   | { kind: "text"; text: string }
@@ -15,11 +16,16 @@ const IMAGE_MIME: Record<string, string> = {
 };
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-export async function extractFile(buf: Uint8Array, filename: string, contentType: string): Promise<Extracted> {
+export async function extractFile(
+  buf: Uint8Array,
+  filename: string,
+  contentType: string,
+  password?: string,
+): Promise<Extracted> {
   const ext = filename.toLowerCase().split(".").pop() ?? "";
   const ct = contentType.toLowerCase();
 
-  if (ext === "pdf" || ct.includes("application/pdf")) return { kind: "text", text: await pdfText(buf) };
+  if (ext === "pdf" || ct.includes("application/pdf")) return { kind: "text", text: await pdfText(buf, password) };
   if (IMAGE_MIME[ext] || ct.startsWith("image/")) {
     if (buf.byteLength > MAX_IMAGE_BYTES) {
       return { kind: "text", text: `Bild ${filename} ist mit ${kb(buf)} zu groß zum Übertragen.` };
@@ -46,8 +52,16 @@ export async function extractFile(buf: Uint8Array, filename: string, contentType
   };
 }
 
-async function pdfText(buf: Uint8Array): Promise<string> {
-  const pdf = await getDocumentProxy(buf);
+async function pdfText(buf: Uint8Array, password?: string): Promise<string> {
+  let pdf;
+  try {
+    pdf = await getDocumentProxy(buf, password ? { password } : {});
+  } catch (e) {
+    if ((e as Error).name === "PasswordException") {
+      throw new PdfPasswordError((e as { code?: number }).code === 2 ? "incorrect" : "required");
+    }
+    throw e;
+  }
   const { totalPages, text } = await extractText(pdf, { mergePages: false });
   const pages = (text as string[]).map((t, i) => `--- Seite ${i + 1} ---\n${t.trim()}`);
   const joined = pages.join("\n\n");

@@ -1,11 +1,15 @@
 import { Env, loadSession, Moodle, saveSession, SessionExpiredError } from "./moodle";
 import { TOOLS } from "./tools";
+import { PdfPasswordError } from "./pdf";
 
 const SUPPORTED_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"];
 const SERVER_INFO = { name: "hm-moodle", title: "HM Moodle", version: "0.1.0" };
 const INSTRUCTIONS =
   "Lesender Zugriff auf das Moodle der Hochschule München. Typischer Ablauf: list_courses, dann get_course_contents " +
-  "mit der Kurs-ID, dann open_url für einzelne Dateien oder Aktivitäten. Termine über upcoming_deadlines.";
+  "mit der Kurs-ID, dann open_url für einzelne Dateien oder Aktivitäten (als Text). Soll der Nutzer die Datei selbst " +
+  "bekommen (PDF ansehen, speichern, drucken) oder sind Layout und Abbildungen wichtig, get_file verwenden und den " +
+  "Download-Link an den Nutzer weitergeben. Passwortgeschützte PDFs: Passwort beim Nutzer erfragen und als password " +
+  "übergeben. Termine über upcoming_deadlines.";
 
 interface RpcRequest {
   jsonrpc: "2.0";
@@ -34,13 +38,13 @@ export async function handleMcp(req: Request, env: Env): Promise<Response> {
   for (const msg of messages) {
     // Notifications and client responses need no answer.
     if (msg.id === undefined || msg.id === null || !msg.method) continue;
-    responses.push(await dispatch(msg, env));
+    responses.push(await dispatch(msg, env, new URL(req.url).origin));
   }
   if (responses.length === 0) return new Response(null, { status: 202 });
   return Response.json(batch ? responses : responses[0]);
 }
 
-async function dispatch(msg: RpcRequest, env: Env) {
+async function dispatch(msg: RpcRequest, env: Env, origin: string) {
   switch (msg.method) {
     case "initialize": {
       const requested = msg.params?.protocolVersion;
@@ -64,13 +68,13 @@ async function dispatch(msg: RpcRequest, env: Env) {
         })),
       });
     case "tools/call":
-      return rpcResult(msg.id, await callTool(msg.params?.name, msg.params?.arguments ?? {}, env));
+      return rpcResult(msg.id, await callTool(msg.params?.name, msg.params?.arguments ?? {}, env, origin));
     default:
       return rpcError(msg.id, -32601, `Method not found: ${msg.method}`);
   }
 }
 
-async function callTool(name: string, args: Record<string, unknown>, env: Env) {
+async function callTool(name: string, args: Record<string, unknown>, env: Env, origin: string) {
   const tool = TOOLS.find((t) => t.name === name);
   if (!tool) return { isError: true, content: [{ type: "text", text: `Unbekanntes Tool: ${name}` }] };
 
@@ -83,7 +87,7 @@ async function callTool(name: string, args: Record<string, unknown>, env: Env) {
   }
   const m = new Moodle(env, session);
   try {
-    const content = await tool.run(m, args, env.TIMEZONE || "Europe/Berlin");
+    const content = await tool.run(m, args, { env, origin, tz: env.TIMEZONE || "Europe/Berlin" });
     if (session.lastCheckOk === false) {
       session.lastCheckOk = true;
       session.lastError = undefined;
@@ -101,6 +105,7 @@ async function callTool(name: string, args: Record<string, unknown>, env: Env) {
         content: [{ type: "text", text: "Die Moodle-Session ist abgelaufen. Bitte im Browser bei Moodle anmelden und das neue MoodleSession-Cookie auf der Setup-Seite des Connectors eintragen (Connector-URL mit /setup statt /mcp)." }],
       };
     }
+    if (e instanceof PdfPasswordError) return { isError: true, content: [{ type: "text", text: e.message }] };
     return { isError: true, content: [{ type: "text", text: `Fehler: ${(e as Error).message}` }] };
   } finally {
     if (m.dirty) await saveSession(env, m.session);

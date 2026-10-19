@@ -1,3 +1,4 @@
+import { handleDownload } from "./download";
 import { handleMcp } from "./mcp";
 import { Env, loadSession, Moodle, saveSession, SessionExpiredError } from "./moodle";
 import { handleSetup } from "./setup";
@@ -17,8 +18,10 @@ export default {
     if (secret.length < 24) {
       return new Response("CONNECTOR_SECRET fehlt oder ist kürzer als 24 Zeichen.", { status: 500 });
     }
-    // All routes live under /<secret>/..., everything else looks like an empty site.
     const [prefix, route = "", ...rest] = new URL(req.url).pathname.split("/").filter(Boolean);
+    // Download links carry their own random token so they can be shared in chat without the secret.
+    if (prefix === "dl" && req.method === "GET") return handleDownload(env, route);
+    // Everything else lives under /<secret>/... and otherwise looks like an empty site.
     if (!prefix || !safeEqual(prefix, secret) || rest.length) return notFound();
     if (route === "mcp") return handleMcp(req, env);
     if (route === "setup") return handleSetup(req, env);

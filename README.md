@@ -14,9 +14,18 @@ Die Session wird trotzdem irgendwann ungültig, etwa wenn du dich im Browser bei
 |---|---|
 | `list_courses` | eingeschriebene Kurse (laufend, alle, vergangen, zukünftig, Favoriten) |
 | `get_course_contents` | Abschnitte und Aktivitäten eines Kurses mit URLs |
-| `open_url` | beliebige Moodle-URL lesen: Dateien (PDF, DOCX, PPTX, XLSX, ODF, Text, Bilder), Seiten, Foren, Aufgaben, Ordner |
+| `open_url` | beliebige Moodle-URL als Text lesen: Dateien (PDF, DOCX, PPTX, XLSX, ODF, Text, Bilder), Seiten, Foren, Aufgaben, Ordner |
+| `get_file` | Datei als Datei holen: Download-Link (24 h gültig) zum Öffnen, Speichern und Drucken, PDFs bis 10 MB zusätzlich direkt angehängt |
 | `upcoming_deadlines` | Abgaben und Termine aus der Zeitleiste, optional pro Kurs |
 | `session_status` | prüft, ob das gespeicherte Cookie noch gilt |
+
+## Passwortgeschützte PDFs
+
+Manche Skripte sind mit einem Passwort verschlüsselt oder gegen Drucken gesperrt. Gib Claude das Passwort im Chat mit („Hol mir das Skript, Passwort ist …“). `get_file` und `open_url` entschlüsseln die Datei damit. Der Download-Link liefert danach ein PDF ohne Passwort und ohne Druck- oder Kopiersperre. PDFs, die nur eine Drucksperre und kein Öffnen-Passwort haben, werden automatisch freigeschaltet.
+
+## Download-Links
+
+Die Links von `get_file` sehen so aus: `https://moodle-connector.xuller4000.workers.dev/dl/<zufälliger Code>/<Dateiname>`. Sie funktionieren ohne das Connector-Secret und ohne Moodle-Login, aber nur 24 Stunden lang. Danach löscht Cloudflare die zwischengespeicherte Datei. Wer den Link in der Zeit hat, kann die Datei öffnen, also nicht weitergeben, wenn das Material nicht geteilt werden soll.
 
 ## Einrichtung
 
@@ -61,7 +70,8 @@ OAuth-Felder leer lassen. Danach steht der Connector auch in der Desktop- und Mo
 
 - Im kostenlosen Cloudflare-Plan darf ein Aufruf nur 10 ms Rechenzeit verbrauchen (Wartezeit auf Moodle zählt nicht). Kurslisten und Seiten passen da locker rein. Große PDFs oder Foliensätze in Text umzuwandeln kann das Limit sprengen, dann kommt ein Fehler. Abhilfe ist der Workers-Paid-Plan für 5 USD im Monat.
 - Eingescannte PDFs ohne Textebene liefern keinen Text.
-- Dateien über 30 MB lädt der Connector nicht.
+- Dateien über 30 MB lädt der Connector nicht, Download-Links gibt es bis 25 MB.
+- Große verschlüsselte PDFs zu entschlüsseln kostet Rechenzeit und stößt im kostenlosen Plan schneller an das 10-ms-Limit als normale Downloads.
 - Täglich zwischen 7 und 8 Uhr ist das HM-Moodle wegen Updates offline.
 
 ## Lokal entwickeln
