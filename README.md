@@ -66,6 +66,22 @@ claude.ai → *Einstellungen → Connectors → Custom Connector hinzufügen*:
 
 OAuth-Felder leer lassen. Danach steht der Connector auch in der Desktop- und Mobile-App zur Verfügung.
 
+## Cookie automatisch übertragen (Edge-Erweiterung)
+
+Im Ordner `extension/` liegt eine Erweiterung für Microsoft Edge (geht genauso in Chrome). Sie liest das `MoodleSession`-Cookie von moodle.hm.edu und schickt es an den Connector, sobald du dich in Edge bei Moodle anmeldest. Alle 15 Minuten prüft sie zusätzlich, ob der Connector noch eine gültige Session hat. Der Connector speichert ein Cookie nur, wenn Moodle bestätigt, dass es angemeldet ist. Ein abgelaufenes oder nicht angemeldetes Cookie überschreibt also nie eine funktionierende Session.
+
+Installation:
+
+1. Den Ordner `extension` auf den Rechner kopieren und an einem festen Ort ablegen, z. B. `Dokumente\HM-Moodle-Cookie-Sync`. Nicht löschen, Edge lädt die Erweiterung von dort.
+2. In Edge `edge://extensions` öffnen.
+3. Links unten **Entwicklermodus** einschalten.
+4. **Entpackte Erweiterung laden** klicken und den Ordner auswählen.
+5. Auf das Puzzle-Symbol in der Symbolleiste klicken und **HM Moodle Cookie-Sync** anheften.
+6. Auf das Symbol klicken, die Setup-Adresse des Connectors einfügen und **Speichern** klicken.
+7. In Edge bei https://moodle.hm.edu anmelden. Nach ein paar Sekunden zeigt das Popup „Cookie übertragen“.
+
+Das Symbol zeigt ein rotes „!“, wenn die Connector-Session abgelaufen ist. Dann reicht es, dich in Edge neu bei Moodle anzumelden. Nicht auf „Abmelden“ klicken, Tab einfach schließen.
+
 ## Grenzen
 
 - Im kostenlosen Cloudflare-Plan darf ein Aufruf nur 10 ms Rechenzeit verbrauchen (Wartezeit auf Moodle zählt nicht). Kurslisten und Seiten passen da locker rein. Große PDFs oder Foliensätze in Text umzuwandeln kann das Limit sprengen, dann kommt ein Fehler. Abhilfe ist der Workers-Paid-Plan für 5 USD im Monat.
