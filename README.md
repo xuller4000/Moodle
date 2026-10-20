@@ -19,6 +19,17 @@ Die Session wird trotzdem irgendwann ungültig, etwa wenn du dich im Browser bei
 | `upcoming_deadlines` | Abgaben und Termine aus der Zeitleiste, optional pro Kurs |
 | `session_status` | prüft, ob das gespeicherte Cookie noch gilt |
 
+## Zweiter Connector: Kleinanzeigen
+
+Derselbe Worker stellt unter `https://moodle-connector.xuller4000.workers.dev/<CONNECTOR_SECRET>/kleinanzeigen/mcp` einen eigenen Connector für kleinanzeigen.de bereit. Er braucht keinen Login und kein Cookie.
+
+| Tool | Zweck |
+|---|---|
+| `search_listings` | Suche mit Begriff, Ort (PLZ oder Stadt), Umkreis, Preisgrenzen, Sortierung, Angebote/Gesuche, Seite |
+| `get_listing` | Details einer Anzeige: Preis, Versand, Ort, Datum, Anbieter, Zustand, Beschreibung und die ersten vier Fotos |
+
+Nur lesend, Nachrichten an Verkäufer kann er nicht senden. Kleinanzeigen sperrt viele Rechenzentrums-IPs; von Cloudflare aus funktioniert es derzeit, das kann sich aber ändern. Die Nutzungsbedingungen von Kleinanzeigen untersagen automatisierte Abfragen, für gelegentliche private Suchen ist das Risiko gering.
+
 ## Passwortgeschützte PDFs
 
 Manche Skripte sind mit einem Passwort verschlüsselt oder gegen Drucken gesperrt. Gib Claude das Passwort im Chat mit („Hol mir das Skript, Passwort ist …“). `get_file` und `open_url` entschlüsseln die Datei damit. Der Download-Link liefert danach ein PDF ohne Passwort und ohne Druck- oder Kopiersperre. PDFs, die nur eine Drucksperre und kein Öffnen-Passwort haben, werden automatisch freigeschaltet.
