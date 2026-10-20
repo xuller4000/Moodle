@@ -53,13 +53,19 @@ function searchPath(a: SearchArgs, locationId?: string): string {
   return `/s-${[...filters, keyword].join("/")}/k0${area}`;
 }
 
-function parseResults(html: string): string[] {
+export function parseResults(html: string): string[] {
   const root = parse(html);
   return root.querySelectorAll("article[data-adid]").map((art) => {
     const id = art.getAttribute("data-adid");
     const url = BASE + (art.getAttribute("data-href") ?? `/s-anzeige/${id}`);
     const title = clean(art.querySelector("h3")?.text) || clean(art.querySelector("h2")?.text);
-    const [place, date] = art.querySelectorAll("span").slice(0, 2).map((s) => clean(s.text));
+    // The top row holds two blocks: place (plus distance for local searches) and date.
+    const topRow = art
+      .querySelectorAll("div")
+      .find((d) => /items-start/.test(d.getAttribute("class") ?? "") && /justify-between/.test(d.getAttribute("class") ?? ""));
+    const [place, date] = (topRow?.childNodes ?? [])
+      .filter((n): n is HTMLElement => n instanceof HTMLElement)
+      .map((d) => clean(d.childNodes.map((c) => c.text).join(" ")));
     const paragraphs = art.querySelectorAll("p").map((p) => ({ cls: p.getAttribute("class") ?? "", text: clean(p.text) }));
     const price = paragraphs.find((p) => p.cls.includes("text-title3"))?.text ?? "";
     const desc = paragraphs.find((p) => p.cls.includes("onSurfaceSubdued"))?.text ?? "";
