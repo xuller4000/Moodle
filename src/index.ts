@@ -1,5 +1,6 @@
 import { handleDownload } from "./download";
-import { handleMcp } from "./mcp";
+import { kleinanzeigenServer } from "./kleinanzeigen";
+import { handleMcp, moodleServer } from "./mcp";
 import { Env, loadSession, Moodle, saveSession, SessionExpiredError } from "./moodle";
 import { handleApi, handleSetup } from "./setup";
 
@@ -24,13 +25,14 @@ export default {
     // Everything else lives under /<secret>/... and otherwise looks like an empty site.
     if (!prefix || !safeEqual(prefix, secret)) return notFound();
     if (route === "api" && rest.length === 1) return handleApi(req, env, rest[0]);
+    if (route === "kleinanzeigen" && rest.join("/") === "mcp") return handleMcp(req, env, kleinanzeigenServer);
     if (rest.length) return notFound();
     if (route === "mcp") {
       // A browser opening the MCP URL by mistake lands on the setup page; MCP clients never ask for HTML.
       if (req.method === "GET" && (req.headers.get("Accept") ?? "").includes("text/html")) {
         return Response.redirect(new URL(`/${prefix}/setup`, req.url).toString(), 302);
       }
-      return handleMcp(req, env);
+      return handleMcp(req, env, moodleServer);
     }
     if (route === "setup") return handleSetup(req, env);
     return notFound();
